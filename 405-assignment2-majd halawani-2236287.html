@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Search</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .search-container {
+            display: flex;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+        
+        #searchInput {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            padding: 12px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .university-card {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .university-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        .university-card p {
+            margin: 5px 0;
+        }
+        
+        .country-flag {
+            width: 20px;
+            height: auto;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            font-size: 18px;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+        
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+        }
+        
+        .no-results {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 18px;
+            padding: 20px;
+        }
+        
+        .website-link {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .website-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>University Search</h1>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Enter university name (e.g., king, harvard)">
+            <button id="searchButton">Search</button>
+        </div>
+        
+        <div id="resultsContainer"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            // Function to fetch universities data
+            async function fetchUniversities(name) {
+                try {
+                    resultsContainer.innerHTML = '<div class="loading">Loading universities...</div>';
+                    
+                    const response = await fetch(`http://universities.hipolabs.com/search?name=${encodeURIComponent(name)}`);
+                    
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    
+                    const universities = await response.json();
+                    
+                    displayResults(universities);
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    resultsContainer.innerHTML = `<div class="error">Error fetching data. Please try again later.</div>`;
+                }
+            }
+            
+            // Function to display results
+            function displayResults(universities) {
+                if (universities.length === 0) {
+                    resultsContainer.innerHTML = '<div class="no-results">No universities found. Try a different search term.</div>';
+                    return;
+                }
+                
+                let html = '';
+                
+                universities.forEach(university => {
+                    html += `
+                        <div class="university-card">
+                            <h3>${university.name} <img src="https://flagcdn.com/w20/${university.alpha_two_code.toLowerCase()}.png" class="country-flag" alt="${university.country} flag"></h3>
+                            <p><strong>Country:</strong> ${university.country}</p>
+                            ${university['state-province'] ? `<p><strong>State/Province:</strong> ${university['state-province']}</p>` : ''}
+                            ${university.domains.length > 0 ? `<p><strong>Domains:</strong> ${university.domains.join(', ')}</p>` : ''}
+                            ${university.web_pages.length > 0 ? `<p><strong>Website:</strong> <a href="${university.web_pages[0]}" class="website-link" target="_blank">${university.web_pages[0]}</a></p>` : ''}
+                        </div>
+                    `;
+                });
+                
+                resultsContainer.innerHTML = html;
+            }
+            
+            // Event listener for search button
+            searchButton.addEventListener('click', function() {
+                const searchTerm = searchInput.value.trim();
+                if (searchTerm) {
+                    fetchUniversities(searchTerm);
+                } else {
+                    resultsContainer.innerHTML = '<div class="no-results">Please enter a search term</div>';
+                }
+            });
+            
+            // Event listener for Enter key in search input
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const searchTerm = searchInput.value.trim();
+                    if (searchTerm) {
+                        fetchUniversities(searchTerm);
+                    } else {
+                        resultsContainer.innerHTML = '<div class="no-results">Please enter a search term</div>';
+                    }
+                }
+            });
+            
+            // Initial load with sample search
+            fetchUniversities('king');
+        });
+    </script>
+</body>
+</html>
